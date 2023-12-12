@@ -58,6 +58,7 @@ def view_images(images, num_rows=1, offset_ratio=0.02):
                 i * num_cols + j]
 
     pil_img = Image.fromarray(image_)
+    pil_img.save("photo.png")
     display(pil_img)
 
 
@@ -89,6 +90,7 @@ def init_latent(latent, model, height, width, generator, batch_size):
         latent = torch.randn(
             (1, model.unet.in_channels, height // 8, width // 8),
             generator=generator,
+            device=model.device
         )
     latents = latent.expand(batch_size,  model.unet.in_channels, height // 8, width // 8).to(model.device)
     return latent, latents
@@ -160,8 +162,8 @@ def text2image_ldm_stable(
     latent, latents = init_latent(latent, model, height, width, generator, batch_size)
     
     # set timesteps
-    extra_set_kwargs = {"offset": 1}
-    model.scheduler.set_timesteps(num_inference_steps, **extra_set_kwargs)
+    # extra_set_kwargs = {"offset": 1}
+    model.scheduler.set_timesteps(num_inference_steps)
     for t in tqdm(model.scheduler.timesteps):
         latents = diffusion_step(model, controller, latents, context, t, guidance_scale, low_resource)
     
