@@ -3,3 +3,9 @@ oil+paiting.png
 oilpaiting.png
 photo.png
 tmp.png
+images/origin/oilpainting/
+images/controlnet/
+images/
+*.png
+*.err
+*.out

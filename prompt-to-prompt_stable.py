@@ -247,6 +247,12 @@ def show_cross_attention(attention_store: AttentionStore, res: int, from_where: 
     images = []
     for i in range(len(tokens)):
         image = attention_maps[:, :, i]
+        # image here is a 2d array of size res x res
+        # Then try to get the average or middle value of this array
+        # use this value as a guidence to give it bigger weight
+        # design the weight function
+        # Loss = image.avg()-image.min()????
+        # 
         image = 255 * image / image.max()
         image = image.unsqueeze(-1).expand(*image.shape, 3)
         image = image.cpu()
@@ -254,7 +260,7 @@ def show_cross_attention(attention_store: AttentionStore, res: int, from_where: 
         image = np.array(Image.fromarray(image).resize((256, 256)))
         image = ptp_utils.text_under_image(image, decoder(int(tokens[i])))
         images.append(image)
-    ptp_utils.view_images(np.stack(images, axis=0))
+    ptp_utils.view_attn_images(np.stack(images, axis=0))
 
 
     
@@ -272,7 +278,7 @@ def show_self_attention_comp(attention_store: AttentionStore, res: int, from_whe
         image = Image.fromarray(image).resize((256, 256))
         image = np.array(image)
         images.append(image)
-    ptp_utils.view_images(np.concatenate(images, axis=1))
+    ptp_utils.view_attn_images(np.concatenate(images, axis=1))
 
 def run_and_display(prompts, controller, latent=None, run_baseline=False, generator=None):
     if run_baseline:
@@ -283,8 +289,16 @@ def run_and_display(prompts, controller, latent=None, run_baseline=False, genera
     ptp_utils.view_images(images)
     return images, x_t
 
-g_cpu = torch.Generator(device=device).manual_seed(41)
-prompts = ["A image of a modern car in photo style"]
-controller = AttentionStore()
+g_cpu = torch.Generator(device=device).manual_seed(8387)
+prompts = ["an image of a car in oilpainting style"]
+# controller = AttentionStore()
+# equalizer = get_equalizer(prompts[1], ("apples",), (-5,))
+# controller_a = AttentionRefine(prompts, NUM_DIFFUSION_STEPS, cross_replace_steps=.8,
+#                                self_replace_steps=.4,
+#                                local_blend=lb)
+equalizer = get_equalizer(prompts[1], ("coffee",), (1,))
+controller = AttentionReweight(prompts, NUM_DIFFUSION_STEPS, cross_replace_steps=.8,
+                                self_replace_steps=.4, 
+                                equalizer=equalizer)
 image, x_t = run_and_display(prompts, controller, latent=None, run_baseline=False, generator=g_cpu)
-show_cross_attention(controller, res=32, from_where=("up", "down"))
+show_cross_attention(controller, res=16, from_where=("up", "down"))
